@@ -1,1 +1,2 @@
---Construction
+CREATE DATABASE EmpresaDB;
+GO
