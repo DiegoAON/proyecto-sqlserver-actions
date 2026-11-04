@@ -1,0 +1,78 @@
+name: Reporte CSV (ejecucion unica)
+
+on:
+  workflow_dispatch:   # Solo se ejecuta cuando tu lo lanzas desde la pestana Actions
+
+env:
+  SQLCMDPASSWORD: ${{ secrets.MSSQL_SA_PASSWORD }}
+  ACCEPT_EULA: Y
+  MSSQL_PID: Developer
+  SA_PASSWORD: ${{ secrets.MSSQL_SA_PASSWORD }}
+
+jobs:
+  reporte:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Levantar SQL Server en Docker
+        run: |
+          docker run -e "ACCEPT_EULA=$ACCEPT_EULA" \
+                     -e "MSSQL_SA_PASSWORD=$SA_PASSWORD" \
+                     -e "MSSQL_PID=$MSSQL_PID" \
+                     -p 1433:1433 --name sqlserver -d mcr.microsoft.com/mssql/server:2022-latest
+
+      - name: Esperar a que SQL Server esté listo
+        run: |
+          for i in {1..60}; do
+            if docker exec -e SQLCMDPASSWORD sqlserver \
+              /opt/mssql-tools18/bin/sqlcmd \
+              -S localhost -U sa -C -b -Q "SELECT 1" > /dev/null 2>&1; then
+              echo "SQL Server está listo (intento $i)."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "SQL Server no respondió a tiempo."
+          docker logs sqlserver
+          exit 1
+
+      - name: Preparar base de datos
+        run: |
+          for script in create_database create_tables create_procedure create_trigger test_data; do
+            echo "Ejecutando sql/$script.sql"
+            docker exec -i -e SQLCMDPASSWORD sqlserver \
+              /opt/mssql-tools18/bin/sqlcmd \
+              -S localhost -U sa -C -b \
+              < "sql/$script.sql"
+          done
+
+      - name: Generar reporte CSV
+        run: |
+          FECHA=$(date +%F)
+          ARCHIVO="reporte_inventario_$FECHA.csv"
+
+          # Encabezado del CSV
+          echo "Producto,Existencias,TotalVendido" > "$ARCHIVO"
+
+          # Datos: -h -1 quita encabezados, -s "," separa por comas, -W quita espacios sobrantes
+          docker exec -e SQLCMDPASSWORD sqlserver \
+            /opt/mssql-tools18/bin/sqlcmd \
+            -S localhost -U sa -C -b -d EmpresaDB \
+            -h -1 -s "," -W \
+            -Q "SET NOCOUNT ON; SELECT I.Producto, I.Existencias, ISNULL(SUM(V.Cantidad), 0) AS TotalVendido FROM Inventario I LEFT JOIN Ventas V ON V.Producto = I.Producto GROUP BY I.Producto, I.Existencias ORDER BY I.Producto;" \
+            >> "$ARCHIVO"
+
+          echo "ARCHIVO_CSV=$ARCHIVO" >> "$GITHUB_ENV"
+          echo "--- Contenido de $ARCHIVO ---"
+          cat "$ARCHIVO"
+
+      - name: Publicar reporte como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporte-inventario
+          path: ${{ env.ARCHIVO_CSV }}
+          retention-days: 30
+          if-no-files-found: error
