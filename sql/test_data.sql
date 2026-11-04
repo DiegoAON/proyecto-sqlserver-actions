@@ -12,5 +12,6 @@ INSERT INTO Ventas (Producto, Cantidad)
 VALUES 
     ('Laptop', 3),
     ('Monitor', 5),
+    ('Laptop', 4), 
     ('Teclado', 2);
 GO

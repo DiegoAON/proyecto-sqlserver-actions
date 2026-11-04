@@ -17,10 +17,15 @@ BEGIN
     SELECT VentaID, 'Venta registrada automáticamente'
     FROM @Ventas;
 
-    -- 2. Descuento en Inventario (Reto Avanzado)
+    -- 2. Descuento en Inventario (Corregido para múltiples ventas del mismo producto)
+    WITH VentasAgrupadas AS (
+        SELECT Producto, SUM(Cantidad) AS TotalVendido
+        FROM @Ventas
+        GROUP BY Producto
+    )
     UPDATE Inv
-    SET Inv.Existencias = Inv.Existencias - V.Cantidad
+    SET Inv.Existencias = Inv.Existencias - VA.TotalVendido
     FROM Inventario Inv
-    INNER JOIN @Ventas V ON Inv.Producto = V.Producto;
+    INNER JOIN VentasAgrupadas VA ON Inv.Producto = VA.Producto;
 END;
 GO
