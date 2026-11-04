@@ -83,8 +83,10 @@ jobs:
       - name: Verificar resultados en consola
         run: |
           echo "--- Datos en tabla Ventas ---"
-          sqlcmd -S localhost -U sa -P "$SA_PASSWORD" -C -Q "SELECT * FROM EmpresaDB.dbo.Ventas;"
+          docker exec -i sqlserver /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$SA_PASSWORD" -C -Q "SELECT * FROM EmpresaDB.dbo.Ventas;"
+          
           echo "--- Datos en tabla AuditoriaVentas ---"
-          sqlcmd -S localhost -U sa -P "$SA_PASSWORD" -C -Q "SELECT * FROM EmpresaDB.dbo.AuditoriaVentas;"
+          docker exec -i sqlserver /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$SA_PASSWORD" -C -Q "SELECT * FROM EmpresaDB.dbo.AuditoriaVentas;"
+          
           echo "--- Datos en tabla Inventario ---"
-          sqlcmd -S localhost -U sa -P "$SA_PASSWORD" -C -Q "SELECT * FROM EmpresaDB.dbo.Inventario;"
+          docker exec -i sqlserver /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$SA_PASSWORD" -C -Q "SELECT * FROM EmpresaDB.dbo.Inventario;"
