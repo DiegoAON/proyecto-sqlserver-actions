@@ -15,3 +15,7 @@ CREATE TABLE AuditoriaVentas(
  Mensaje VARCHAR(255)
 );
 
+CREATE TABLE Inventario(
+    Producto VARCHAR(100) PRIMARY KEY,
+    Existencias INT
+);

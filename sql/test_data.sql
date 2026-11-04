@@ -1,9 +1,16 @@
 USE EmpresaDB;
 GO
 
+INSERT INTO Inventario (Producto, Existencias)
+VALUES 
+    ('Laptop', 50),
+    ('Monitor', 50),
+    ('Teclado', 50);
+GO
+
 INSERT INTO Ventas (Producto, Cantidad)
-VALUES
+VALUES 
     ('Laptop', 3),
     ('Monitor', 5),
-    ('Teclado', 10);
+    ('Teclado', 2);
 GO
